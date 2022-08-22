@@ -1,20 +1,36 @@
+
+
 var builder = WebApplication.CreateBuilder();
 var app = builder.Build();
 
 app.Run(async (context) =>
 {
-    var path = context.Request.Path;
-    var fullpath = $"html/{path}";
     var response = context.Response;
+    var request = context.Request;
 
     response.ContentType = "text/html; charset=utf-8";
-    if (File.Exists(fullpath))
-        await response.SendFileAsync(fullpath);
+
+    if (request.Path == "/upload" && request.Method == "POST")
+    {
+        IFormFileCollection files = request.Form.Files;
+        var uploadPath = $"{Directory.GetCurrentDirectory()}/uploads";
+        Directory.CreateDirectory(uploadPath);
+
+
+        foreach (var file in files)
+        {
+            string fullPath = $"{uploadPath}/{file.FileName}";
+
+            using (var fileStream = new FileStream(fullPath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+        }
+        await response.WriteAsync("Файлы успешно загружены");
+    }
     else
     {
-        response.StatusCode = 404;
-        await context.Response.WriteAsync("Page not found");
+        await response.SendFileAsync("html/index.html");
     }
 });
-
 app.Run();
