@@ -1,36 +1,25 @@
-
-
 var builder = WebApplication.CreateBuilder();
+// Ветки
 var app = builder.Build();
 
-app.Run(async (context) =>
-{
-    var response = context.Response;
-    var request = context.Request;
+app.UseWhen(
+    context => context.Request.Path == "/time",
+    HandleTimeRequest
+    );
 
-    response.ContentType = "text/html; charset=utf-8";
-
-    if (request.Path == "/upload" && request.Method == "POST")
+app.Run(async(context) =>
     {
-        IFormFileCollection files = request.Form.Files;
-        var uploadPath = $"{Directory.GetCurrentDirectory()}/uploads";
-        Directory.CreateDirectory(uploadPath);
-
-
-        foreach (var file in files)
-        {
-            string fullPath = $"{uploadPath}/{file.FileName}";
-
-            using (var fileStream = new FileStream(fullPath, FileMode.Create))
-            {
-                await file.CopyToAsync(fileStream);
-            }
-        }
-        await response.WriteAsync("Файлы успешно загружены");
-    }
-    else
-    {
-        await response.SendFileAsync("html/index.html");
-    }
+        await context.Response.WriteAsync("hello asp");
 });
+
 app.Run();
+
+void HandleTimeRequest(IApplicationBuilder appBuilder)
+{
+    appBuilder.Use(async (context, next) =>
+    {
+        var time = DateTime.Now.ToShortTimeString();
+        Console.WriteLine($"Time:{time}");
+        await next();
+    });
+}
